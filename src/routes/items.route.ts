@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { findAll, findById } from '../controllers/api.controller';
+import { findAll, findById } from '../controllers/items.controller';
 
 const route = Router();
 
