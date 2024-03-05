@@ -1,10 +1,9 @@
 /* eslint-disable camelcase */
 import { Request, Response } from 'express';
-import { ProductProps, ResponseListProducts } from '../types/types';
+import { ResponseCategories, ResponseListProducts } from '../types/types';
 
 export const findAll = async (req: Request, res: Response) => {
   try {
-    console.log('req :>> ', req?.query);
     const responseProduct = await fetch(
       `${process.env.API_ENDPOINT}/sites/MLA/search?q=${req?.query?.search}`,
       {
@@ -14,10 +13,11 @@ export const findAll = async (req: Request, res: Response) => {
         },
       },
     );
+
     const data =
       (await responseProduct?.json()) as unknown as ResponseListProducts;
 
-    const listProducts = await data?.results?.slice(0, 4)?.map((product) => {
+    const listProducts = data?.results?.slice(0, 4)?.map((product) => {
       return {
         id: product?.id,
         title: product?.title,
@@ -29,22 +29,19 @@ export const findAll = async (req: Request, res: Response) => {
         picture: product?.thumbnail,
         condition: product?.condition,
         free_shipping: product?.shipping?.free_shipping,
-        seller: product?.official_store_name,
+        city: product?.location?.city?.name,
       };
     });
 
     const categories =
-      (
-        await data?.available_filters
-          ?.find((item) => item?.id === 'category')
-          ?.values?.sort((a, b) => {
-            return b.results - a.results;
-          })
-      )
+      data?.available_filters
+        ?.find((item) => item?.id === 'category')
+        ?.values?.sort((a, b) => {
+          return b.results - a.results;
+        })
         ?.map((item) => item?.name)
         ?.slice(0, 5) || data?.filters?.map((item) => item?.values?.[0]?.name);
 
-    console.log('res :>> ', listProducts);
     res.send({
       results: {
         author: {
@@ -66,7 +63,7 @@ export const findAll = async (req: Request, res: Response) => {
 export const findById = async (req: Request, res: Response) => {
   try {
     const id = req?.params?.id;
-    console.log('req :>> ', id);
+
     const responseProduct = await fetch(
       `${process.env.API_ENDPOINT}/items/${id}`,
       {
@@ -88,15 +85,40 @@ export const findById = async (req: Request, res: Response) => {
     const dataDescription = await responseDescription?.json();
     const data = await responseProduct?.json();
 
-    const { title, condition, pictures, price, shipping, currency_id } = data;
+    const responseCategories = await fetch(
+      `${process.env.API_ENDPOINT}/categories/${data?.category_id}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      },
+    );
 
-    console.log('res :>> ', dataDescription);
+    const dataCategories =
+      (await responseCategories.json()) as unknown as ResponseCategories;
+
+    const {
+      title,
+      condition,
+      pictures,
+      price,
+      shipping,
+      currency_id,
+      sold_quantity,
+    } = data;
+
+    const filterCategories = dataCategories?.path_from_root?.map(
+      (category) => category?.name,
+    );
+
     res.status(201).send({
       results: {
         author: {
           name: 'Ricardo',
           lastname: 'Bonin',
         },
+        categories: filterCategories,
         item: {
           id: data?.id,
           title,
@@ -108,7 +130,7 @@ export const findById = async (req: Request, res: Response) => {
           picture: pictures?.[0]?.url,
           condition,
           free_shipping: shipping?.free_shipping,
-          sold_quantity: 0,
+          sold_quantity,
           description: dataDescription?.plain_text,
         },
       },
