@@ -10,6 +10,11 @@ export interface ProductProps {
   condition: string;
   official_store_name: string;
   shipping: ShippingProps;
+  location: {
+    city: {
+      name: string;
+    };
+  };
 }
 
 export interface AvailableFilterItemProps {
@@ -33,4 +38,8 @@ export interface ResponseListProducts {
   results: ProductProps[];
   available_filters: AvailableFilterProps[];
   filters: FiltersProps[];
+}
+
+export interface ResponseCategories {
+  path_from_root: { name: string }[];
 }
