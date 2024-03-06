@@ -5,7 +5,7 @@ import { ResponseCategories, ResponseListProducts } from '../types/types';
 export const findAll = async (req: Request, res: Response) => {
   try {
     const responseProduct = await fetch(
-      `${process.env.API_ENDPOINT}/sites/MLA/search?q=${req?.query?.search}`,
+      `${process.env.API_ENDPOINT}/sites/MLA/search?q=${req?.query?.q}`,
       {
         headers: {
           Accept: 'application/json',
@@ -41,6 +41,10 @@ export const findAll = async (req: Request, res: Response) => {
         })
         ?.map((item) => item?.name)
         ?.slice(0, 5) || data?.filters?.map((item) => item?.values?.[0]?.name);
+
+    if (!responseProduct.ok) {
+      throw new Error('Error trying to make a request.');
+    }
 
     res.send({
       results: {
@@ -111,6 +115,14 @@ export const findById = async (req: Request, res: Response) => {
     const filterCategories = dataCategories?.path_from_root?.map(
       (category) => category?.name,
     );
+
+    if (
+      !responseProduct.ok ||
+      !responseDescription.ok ||
+      !responseCategories.ok
+    ) {
+      throw new Error('Error trying to make a request.');
+    }
 
     res.status(201).send({
       results: {
