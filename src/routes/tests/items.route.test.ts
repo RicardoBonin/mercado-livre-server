@@ -1,12 +1,12 @@
 import { mockRequest, mockResponse } from 'jest-mock-req-res';
-import { findAll, findById } from '../items.controller';
+import { findAll, findById } from '../../controllers/items.controller';
 
 describe('API controller', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('Should return the listProducts', async () => {
+  test('Should return the list of products', async () => {
     const req = mockRequest();
     const res = mockResponse();
 
@@ -43,16 +43,13 @@ describe('API controller', () => {
         },
       ],
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const globalRef: any = global;
-    globalRef.fetch = jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve(mockData),
-      }),
-    );
-    const globalFetch = global.fetch;
+
+    const globalRef = global;
+    globalRef.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(mockData),
+    });
 
     await findAll(req, res);
 
@@ -84,10 +81,9 @@ describe('API controller', () => {
         message: 'Success i',
       }),
     );
-    global.fetch = globalFetch;
   });
 
-  test('Should return one product per', async () => {
+  test('Should return a single product by ID', async () => {
     const req = mockRequest({ params: { id: '123' } });
     const res = mockResponse();
 
@@ -108,30 +104,25 @@ describe('API controller', () => {
     const mockCategoriesData = {
       path_from_root: [{ name: 'Category 1' }, { name: 'Category 2' }],
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const globalRef: any = global;
-    globalRef.fetch = jest.fn().mockImplementation(() =>
-      Promise.resolve({
+
+    const globalRef = global;
+    globalRef.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: () => Promise.resolve(mockProductData),
-      }),
-    );
-    globalRef.fetch = jest.fn().mockImplementation(() =>
-      Promise.resolve({
+      })
+      .mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: () => Promise.resolve(mockDescriptionData),
-      }),
-    );
-    globalRef.fetch = jest.fn().mockImplementation(() =>
-      Promise.resolve({
+      })
+      .mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: () => Promise.resolve(mockCategoriesData),
-      }),
-    );
-    const globalFetch = global.fetch;
+      });
 
     await findById(req, res);
 
@@ -139,20 +130,19 @@ describe('API controller', () => {
     expect(res.send).toHaveBeenCalledWith({
       message: 'Success',
       results: {
-        author: { lastname: 'Bonin', name: 'Ricardo' },
+        author: { name: 'Ricardo', lastname: 'Bonin' },
         categories: ['Category 1', 'Category 2'],
         item: {
-          condition: undefined,
-          description: undefined,
-          free_shipping: undefined,
-          id: undefined,
-          picture: undefined,
-          price: { amount: undefined, currency: undefined, decimals: 0 },
-          sold_quantity: undefined,
-          title: undefined,
+          id: '123',
+          title: 'Product 1',
+          price: { currency: 'USD', amount: 10, decimals: 0 },
+          picture: 'picture_url',
+          condition: 'new',
+          free_shipping: true,
+          sold_quantity: 5,
+          description: 'Description of the product',
         },
       },
     });
-    global.fetch = globalFetch;
   });
 });
